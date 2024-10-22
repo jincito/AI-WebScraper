@@ -1,45 +1,27 @@
 # Selenium class/modules - to scrape the data from the website
 # Control our web browser using the Selenium WebDriver
-import platform
-import selenium.webdriver as webdriver
-from selenium.webdriver.chrome.service import Service
-import time
+from config import AUTH
+from selenium.webdriver import Remote, ChromeOptions
+from selenium.webdriver.chromium.remote_connection import ChromiumRemoteConnection
+# Bright Data proxy manager - Web Data Platform
+SBR_WEBDRIVER = f'https://{AUTH}@zproxy.lum-superproxy.io:9515'
 
 
 def scrape_website(website):
-    print("Launching chrome browser...")
-
-    # Get the system architecture
-    system_arch = platform.machine()
-
-    # Define the ChromeDriver path based on the system architecture
-    if system_arch == 'x86_64':
-        chrome_driver_path = "./chromedriver_linux64"  # For 64-bit Linux
-    elif system_arch == 'aarch64':
-        chrome_driver_path = "./chromedriver_arm64"  # For ARM 64-bit
-    elif system_arch == 'arm64':
-        chrome_driver_path = "./chromedriver_mac_arm64"  # For Mac ARM
-    elif system_arch == 'x86':
-        chrome_driver_path = "./chromedriver_win_32.exe"  # For 32-bit Windows
-    elif system_arch == 'amd64':
-        chrome_driver_path = "./chromedriver_win_64"  # For 64-bit Windows
-    elif system_arch == 'Darwin':
-        chrome_driver_path = "./chromedriver_mac_x64"  # For macOS x64
-    else:
-        raise ValueError("Unsupported architecture: " + system_arch)
-
-    # Passing no options but some include headless mode, ignore images, etc.
-    options = webdriver.ChromeOptions()
-    driver = webdriver.Chrome(service=Service(
-        chrome_driver_path), options=options)
-
-    try:
+    print("Connecting to Scraping Browser...")
+    sbr_connection = ChromiumRemoteConnection(SBR_WEBDRIVER, 'goog', 'chrome')
+    with Remote(sbr_connection, options=ChromeOptions()) as driver:
         driver.get(website)
-        print("Page loaded...")
+        # Captcha handling: If you're expecting a CAPTCHA on the target page, use the following code snippet
+        print("Waiting for CAPTCHA to solve...")
+        solve_res = driver.execute(
+            "executeCdpCommand",
+            {
+                "cmd": "Captcha.waitForSolve",
+                "params": {"detectTimeout": 10000},
+            }
+        )
+        print('Captcha solve status:', solve_res['value']['status'])
+        print('Navigated! Scraping page content...')
         html = driver.page_source
-        time.sleep(10)
-
         return html
-    finally:
-        driver.quit()
-        print("Browser closed...")

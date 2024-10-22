@@ -1,1 +1,14 @@
 ai/
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# Configuration files with sensitive information
+config.py
+
+# Other files to ignore
+*.log
+*.db
